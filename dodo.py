@@ -1,23 +1,25 @@
+from __future__ import division 
 import pyglet
 import os
-
 image_extensions = ['jpg']
+#image_extensions = ['JPG']
 
 class Dodo(pyglet.window.Window):
     def __init__(self, directory):
-        pyglet.window.Window.__init__(self, fullscreen = True)
+        pyglet.window.Window.__init__(self, width=900, height=600)
         self.load_all_images(directory)
 
     def load_all_images(self, directory):
         """loads all images in <directory> if they have a file extension
         included in <image_extensions>."""
-        self.images = []
+        self.sprites = []
         for filename in os.listdir(directory):
             for ext in image_extensions:
                 if filename.endswith(ext):
                     # only load images with supported extensions
-                    self.images.append(pyglet.image.load('%s/%s' % (directory, filename)))
-
+                    pic=pyglet.image.load('%s/%s' % (directory, filename))
+                    #pic=pyglet.image.load('c:\pics\dodo1.jpg')
+                    self.sprites.append(pyglet.sprite.Sprite(pic))			
     def get_layout(self, n):
         """Returns a tuple with a suggested matrix size for displaying <n> images
         'optimized' for the current screen resolution. NOTE! This implementation
@@ -45,55 +47,38 @@ class Dodo(pyglet.window.Window):
         self.clear()
 
         # c, r is the suggested matrix layout
-        c, r = self.get_layout(len(self.images))
-
+        c, r = self.get_layout(len(self.sprites))
+        print("cols",c)
+        print("rows",r)
         # dx, dy is the maximum size of each image in the matrix
         dx, dy = self.width/c, self.height/r
-
-        i, y = 0, 0
-        for row in range(r):
-            x = 0
-            for col in range(c):
-                # display image on screen by selecting the center region of the
-                # image that fits into the matrix slot.
-
-                # cx, cy is the center of the image
-                cx, cy = self.images[i].width/2, self.images[i].height/2
-
-                # xp, yp is the top left position of the image that fits into
-                # the matrix slot.
-                xp, yp = cx-(dx/2)+2, cy-(dy/2)+2
-
-                # this is the border size around each image
-                offset_x, offset_y = 2, 2
-                if xp < 0 and yp > 0:
-                    # if xp is outside of the image (negative value) we copy the
-                    # whole width of the image and adjust the offset accordingly.
-                    img = self.images[i].get_region(0,yp,self.images[i].width,dy-4)
-                    offset_x = 2+ abs(xp)
-                    
-                elif xp > 0 and yp < 0:
-                    # see above
-                    img = self.images[i].get_region(xp,0,dx-4,self.images[i].height)
-                    offset_y = 2+ abs(yp)
-                    
-                elif xp < 0 and yp < 0:
-                    # see above
-                    img = self.images[i].get_region(0,0,self.images[i].width,self.images[i].height)
-                    offset_x, offset_y = 2+ abs(xp), 2+ abs(yp)
-                    
-                else:          
-                    img = self.images[i].get_region(xp,yp,dx-4,dy-4)
-
-                # copy image to screen
-                img.blit(x+offset_x, y+offset_y)
-                
+        x = 0
+        y = 0
+        i = 0
+        for col in range(c):
+           y = 0
+           for row in range(r):
+           	#break if all pictures already drawn
+                if i==len(self.sprites):
+                   break
+                # Scale the image to fit the area.
+		scale=float(dx / (self.sprites[i].width))
+		if scale > float(dy / self.sprites[i].height):
+		     scale = float(dy / self.sprites[i].height)
+		print("scale" ,scale)     
+                self.sprites[i].position=(x,y)
+                self.sprites[i].scale = scale
+                self.sprites[i].draw()
+                print("x",x)
+                print("y",y)
                 i += 1
-                x += dx
-                
-            y += dy
+                y += dy
+                print("dy",dy)
+                print("i",i)
+           x += dx
 
 if __name__ == '__main__':
-    dodo = Dodo(directory = '/home/johanlindberg/Pictures/')
+    dodo = Dodo(directory = 'c:\pics')
     pyglet.app.run()
     
+
