@@ -98,9 +98,14 @@ class Dodo(pyglet.window.Window):
         temp.scale = scale
         self.sprites.append(temp)
  	print("on_mouse_press_end")
+ 
               
-#    def on_resize(self, width, height):
-#        print("On_resize_start")
+    def on_resize(self, width, height): 
+          pyglet.window.Window.on_resize(self, width, height) 
+          for i in range(len(self.sprites)):
+              self.sprites[i].scale=1
+          self.position_and_scale_all_images() 
+          print("On_resize_start")
 
 if __name__ == '__main__':
     dodo = Dodo(directory = 'c:\pics')
