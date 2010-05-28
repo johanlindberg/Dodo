@@ -6,7 +6,7 @@ image_extensions = ['jpg']
 
 class Dodo(pyglet.window.Window):
     def __init__(self, directory):
-        pyglet.window.Window.__init__(self, width=900, height=600)
+        pyglet.window.Window.__init__(self, width=900, height=600, resizable=True)
         self.load_all_images(directory)
 
     def load_all_images(self, directory):
@@ -82,6 +82,25 @@ class Dodo(pyglet.window.Window):
         self.clear()
         for i in range(len(self.sprites)):
            self.sprites[i].draw()
+           
+           
+    def on_mouse_press(self,x, y, button, modifiers):
+	print("on_mouse_press_start")
+	#algorith to select correct img missing now... Picking first as an example.
+	temp=self.sprites[0];
+	temp.scale=1 #found out that scale is performed towards original picture size 
+	self.clear()
+	self.sprites=[]
+	scale=(self.width / temp.width)
+	if scale > (self.height / temp.height):
+		scale = (self.height / temp.height)
+	temp.position=(0,0)
+        temp.scale = scale
+        self.sprites.append(temp)
+ 	print("on_mouse_press_end")
+              
+#    def on_resize(self, width, height):
+#        print("On_resize_start")
 
 if __name__ == '__main__':
     dodo = Dodo(directory = 'c:\pics')
