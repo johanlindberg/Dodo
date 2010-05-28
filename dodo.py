@@ -100,11 +100,12 @@ class Dodo(pyglet.window.Window):
         self.sprites.append(temp)
  	print("on_mouse_press_end")
               
-#    def on_resize(self, width, height):
-#        print("On_resize_start")
+    def on_resize(self, width, height):
+        pyglet.window.Window.on_resize(self, width, height)
+        self.position_and_scale_all_images()
 
 if __name__ == '__main__':
 #    dodo = Dodo(directory = r'c:\pics')
-    dodo = Dodo(directory = r'/home/johanlindberg/Pictures/Dodo/')
+    dodo = Dodo(directory = r'/home/johanlindberg/Pictures/')
     pyglet.app.run()
     
