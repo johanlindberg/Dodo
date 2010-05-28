@@ -1,6 +1,7 @@
 from __future__ import division 
 import pyglet
 import os
+
 image_extensions = ['jpg']
 #image_extensions = ['JPG']
 
@@ -15,11 +16,13 @@ class Dodo(pyglet.window.Window):
         self.sprites = []
         for filename in os.listdir(directory):
             for ext in image_extensions:
+#                if filename.lower().endswith(ext.lower()):
                 if filename.endswith(ext):
                     # only load images with supported extensions
                     pic=pyglet.image.load('%s/%s' % (directory, filename))
                     #pic=pyglet.image.load('c:\pics\dodo1.jpg')
                     self.sprites.append(pyglet.sprite.Sprite(pic))			
+
     def get_layout(self, n):
         """Returns a tuple with a suggested matrix size for displaying <n> images
         'optimized' for the current screen resolution. NOTE! This implementation
@@ -78,7 +81,7 @@ class Dodo(pyglet.window.Window):
            x += dx
 
 if __name__ == '__main__':
-    dodo = Dodo(directory = 'c:\pics')
+#    dodo = Dodo(directory = r'c:\pics')
+    dodo = Dodo(directory = r'/home/johanlindberg/Pictures/Dodo/')
     pyglet.app.run()
     
-
