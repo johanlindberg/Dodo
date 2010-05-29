@@ -11,8 +11,10 @@ class Dodo(pyglet.window.Window):
     def __init__(self, directory):
         pyglet.window.Window.__init__(self, width=900, height=600, resizable=True)
 
+        self.click_handlers = {}
         self.load_all_images(directory)
-        logging.basicConfig(filename = 'log.txt', level = logging.DEBUG)
+        logging.basicConfig(filename = '/home/johanlindberg/Projects/Dodo/log.txt',
+                            level = logging.DEBUG)
 
     def load_all_images(self, directory):
         """loads all images in <directory> if they have a file extension
@@ -53,11 +55,31 @@ class Dodo(pyglet.window.Window):
 	    	self.sprites[i].position=(x,y)
                 self.sprites[i].scale = scale
 
+                # attach an on_mouse_click handler to this sprite
+                def handler(self, x, y, button, modifiers):
+                    print "You clicked at pos %s,%s which contains sprite number: %s" % (x, y, i)
+                self.click_handlers[i] = handler
+
                 i += 1
                 y += dy
            x += dx
         logging.debug("position_and_scale_end")
         
+    def position_and_scale_one_image(self, i):
+	logging.debug("position_and_scale_one_image_start")
+	#algorith to select correct img missing now... Picking first as an example.
+	temp=self.sprites[0];
+	temp.scale=1 #found out that scale is performed towards original picture size 
+	self.clear()
+	self.sprites=[]
+	scale=(self.width / temp.width)
+	if scale > (self.height / temp.height):
+		scale = (self.height / temp.height)
+	temp.position=(0,0)
+        temp.scale = scale
+        self.sprites.append(temp)
+ 	logging.debug("position_and_scale_one_image_end")
+              
     def get_layout(self, n):
         """Returns a tuple with a suggested matrix size for displaying <n> images
         'optimized' for the current screen resolution. NOTE! This implementation
@@ -82,29 +104,24 @@ class Dodo(pyglet.window.Window):
  	logging.debug("Get_layout_end")                   
         return (w,h)
 
-        
+    ## event handlers
+    ## --------------
+
     def on_draw(self):
     	logging.debug("on_draw")
         self.clear()
         for i in range(len(self.sprites)):
            self.sprites[i].draw()
            
-           
-    def on_mouse_press(self,x, y, button, modifiers):
-	logging.debug("on_mouse_press_start")
-	#algorith to select correct img missing now... Picking first as an example.
-	temp=self.sprites[0];
-	temp.scale=1 #found out that scale is performed towards original picture size 
-	self.clear()
-	self.sprites=[]
-	scale=(self.width / temp.width)
-	if scale > (self.height / temp.height):
-		scale = (self.height / temp.height)
-	temp.position=(0,0)
-        temp.scale = scale
-        self.sprites.append(temp)
- 	logging.debug("on_mouse_press_end")
-              
+    def on_mouse_press(self, x, y, button, modifiers):
+        for i in xrange(len(self.sprites)):
+            sprite = self.sprites[i]
+            if x > sprite.x and \
+               x < sprite.x + sprite.width and \
+               y > sprite.y and \
+               y < sprite.y + sprite.height:
+                self.click_handlers[i](self, x, y, button, modifiers)
+
     def on_resize(self, width, height):
         pyglet.window.Window.on_resize(self, width, height)
         self.position_and_scale_all_images()
