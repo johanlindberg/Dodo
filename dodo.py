@@ -49,7 +49,7 @@ class Dodo(pyglet.window.Window):
             pic=pyglet.image.load(back_img)
             self.sprites.append(pyglet.sprite.Sprite(pic))
             self.filename.append('back')
-            self.nextlevelexists.append(-1)        
+            self.nextlevelexists.append(-2)        
     	self.position_and_scale_all_images()
         logging.debug("Load_all_images_end")            
     
@@ -133,9 +133,11 @@ class Dodo(pyglet.window.Window):
              #   self.click_handlers[i](self, x, y, button, modifiers)
                  
                  #if the clicked img is the back img, go up one level
-                 if self.nextlevelexists[i]==-1:
-                     (head,tail)=os.path.split(os.curdir)
-                     os.curdir=head
+                 if self.nextlevelexists[i] < 0:
+                     if self.nextlevelexists[i] < -1:
+                         (head,tail)=os.path.split(os.curdir)
+                         os.curdir=head
+
                      self.load_all_images()
                      break	
                  
@@ -150,6 +152,14 @@ class Dodo(pyglet.window.Window):
                      self.sprites = [self.sprites[i],]
                      self.filename = [self.filename[i],]
                      self.nextlevelexists = [self.nextlevelexists[i],]
+                     self.position_and_scale_all_images()
+
+                     pic=pyglet.image.load(back_img)
+                     self.sprites.append(pyglet.sprite.Sprite(pic))
+                     self.filename.append('back')
+                     self.nextlevelexists.append(-1)
+
+                     break
 
     def on_resize(self, width, height):
         pyglet.window.Window.on_resize(self, width, height)
