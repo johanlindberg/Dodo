@@ -152,12 +152,13 @@ class Dodo(pyglet.window.Window):
                      self.sprites = [self.sprites[i],]
                      self.filename = [self.filename[i],]
                      self.nextlevelexists = [self.nextlevelexists[i],]
-                     self.position_and_scale_all_images()
 
                      pic=pyglet.image.load(back_img)
                      self.sprites.append(pyglet.sprite.Sprite(pic))
                      self.filename.append('back')
                      self.nextlevelexists.append(-1)
+
+                     self.position_and_scale_all_images()
 
                      break
 
