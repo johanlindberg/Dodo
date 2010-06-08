@@ -6,12 +6,10 @@ import os
 ## To be put in config file:
 image_extensions = ['jpg']
 #image_extensions = ['JPG']
-start_directory = r'c:\pics'
-#start_directory = r'/home/johanlindberg/Pictures/'
-back_img = r'c:\pics\dodo_default\back.jpg'
-
-
-
+#start_directory = r'c:\pics'
+start_directory = r'/home/johanlindberg/Pictures'
+#back_img = r'c:\pics\dodo_default\back.jpg'
+back_img = r'/home/johanlindberg/Pictures/Dodo/back.jpg'
 
 class Dodo(pyglet.window.Window):
     def __init__(self):
@@ -148,7 +146,11 @@ class Dodo(pyglet.window.Window):
 		     break
 		     
 		 #if the clicked img is not a sub-meny or back it should be be fullscreen
-		 #if self.nextlevelexists[i]==0:
+		 if self.nextlevelexists[i]==0:
+                     self.sprites = [self.sprites[i],]
+                     self.filename = [self.filename[i],]
+                     self.nextlevelexists = [self.nextlevelexists[i],]
+
     def on_resize(self, width, height):
         pyglet.window.Window.on_resize(self, width, height)
         self.position_and_scale_all_images()
