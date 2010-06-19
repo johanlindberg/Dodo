@@ -6,17 +6,19 @@ import os
 ## To be put in config file:
 image_extensions = ['jpg']
 #image_extensions = ['JPG']
-#start_directory = r'c:\pics'
-start_directory = r'/home/johanlindberg/Pictures'
-#back_img = r'c:\pics\dodo_default\back.jpg'
-back_img = r'/home/johanlindberg/Pictures/Dodo/back.jpg'
+start_directory = r'c:\pics'
+#start_directory = r'/home/johanlindberg/Pictures'
+back_img = r'c:\pics\dodo_default\back.jpg'
+#back_img = r'/home/johanlindberg/Pictures/Dodo/back.jpg'
 
 class Dodo(pyglet.window.Window):
     def __init__(self):
         pyglet.window.Window.__init__(self, width=800, height=600, resizable=True)
 
         self.click_handlers = {}
+        self.load_back_sprite()
         self.load_all_images()
+        pic=pyglet.image.load(back_img)
         logging.basicConfig(filename = '/home/johanlindberg/Projects/Dodo/log.txt',
                             level = logging.DEBUG)
 
@@ -28,40 +30,42 @@ class Dodo(pyglet.window.Window):
         self.sprites = []
         """next level exists if there is a directory with the same name as 
         the filename without the file extenstion"""
-        self.nextlevelexists=[]
         for filename in os.listdir(os.curdir):        
+            # only load images with supported extensions
             for ext in image_extensions:
 #                if filename.lower().endswith(ext.lower()):
                 if filename.endswith(ext):
                     fname,extens=os.path.splitext(filename)
-                    print(os.path.join(os.curdir,fname))
-                    if os.path.isdir(os.path.join(os.curdir,fname)):
-                        self.nextlevelexists.append(1)                 
-                    else:
-                        self.nextlevelexists.append(0)
-                    
-                    # only load images with supported extensions
                     pic = pyglet.image.load('%s/%s' % (os.curdir, filename))
                     spr = pyglet.sprite.Sprite(pic)
                     spr.filename = fname
-                    self.sprites.append(spr)
-                    
-        """Add back sprite if this is not the base diretory"""
-        if os.curdir != start_directory:
-            pic=pyglet.image.load(back_img)
-            spr = pyglet.sprite.Sprite(pic)
-            spr.filename = 'back'
-            self.sprites.append(spr)
-
-            self.nextlevelexists.append(-2)        
+                    print(os.path.join(os.curdir,fname))
+                    if os.path.isdir(os.path.join(os.curdir,fname)):
+                        spr.nextlevelexists=1                 
+                    else:
+                        spr.nextlevelexists=0                                        
+                    self.sprites.append(spr)       
     	self.position_and_scale_all_images()
-        logging.debug("Load_all_images_end")            
+        logging.debug("Load_all_images_end")
+    
+    def load_back_sprite(self):
+    	self.back_sprite = pyglet.sprite.Sprite(pyglet.image.load(back_img))
+        self.position_back_sprite()            
+
+    
+    
+    def position_back_sprite(self):
+    	self.back_sprite_x_pos = self.width - self.back_sprite.width
+    	self.back_sprite_y_pos = self.height - self.back_sprite.height    
+    	self.back_sprite.position = (self.back_sprite_x_pos , self.back_sprite_y_pos)
+    
+    
     
     def position_and_scale_all_images(self):	
     	logging.debug("position_and_scale_start")
     	for i in range(len(self.sprites)):
            self.sprites[i].scale=1
-           print(self.nextlevelexists[i])		
+           print(self.sprites[i].nextlevelexists)		
         # c, r is the suggested matrix layout
         c, r = self.get_layout(len(self.sprites))
         # dx, dy is the maximum size of each image in the matrix
@@ -92,6 +96,20 @@ class Dodo(pyglet.window.Window):
                 y += dy
            x += dx
         logging.debug("position_and_scale_end")
+   
+   
+   
+    def back_image_clicked(self,x,y):
+   	print("back_pressed")
+   	print(os.curdir,start_directory)
+   	print("len")
+   	print(len(self.sprites))
+   	print(self.sprites[0].nextlevelexists)	
+        if os.curdir != start_directory:
+            if self.sprites[0].nextlevelexists != -1: 
+                (head,tail)=os.path.split(os.curdir)
+	        os.curdir=head
+	self.load_all_images()
    
               
     def get_layout(self, n):
@@ -126,48 +144,38 @@ class Dodo(pyglet.window.Window):
         self.clear()
         for i in range(len(self.sprites)):
            self.sprites[i].draw()
+        self.back_sprite.draw()
 
     def on_mouse_press(self, x, y, button, modifiers):
+    	#if the clicked img is the back img. If it is, go back one step
+        if x > self.back_sprite_x_pos and y > self.back_sprite_y_pos:
+            self.back_image_clicked(x,y)
+	    self.load_all_images()
+	    return 1
+	#Go through the sprites to se which one was clicked    
         for i in xrange(len(self.sprites)):
             sprite = self.sprites[i]
             if x > sprite.x and \
                x < sprite.x + sprite.width and \
                y > sprite.y and \
                y < sprite.y + sprite.height:
-             #   self.click_handlers[i](self, x, y, button, modifiers)
-                 
-                 #if the clicked img is the back img, go up one level
-                 if self.nextlevelexists[i] < 0:
-                     if self.nextlevelexists[i] < -1:
-                         (head,tail)=os.path.split(os.curdir)
-                         os.curdir=head
-
-                     self.load_all_images()
-                     break	
-                 
+             #   self.click_handlers[i](self, x, y, button, modifiers)                 
                  #if the clicked img is a sub-menu, go to next level
-                 if self.nextlevelexists[i]==1:
+                 if self.sprites[i].nextlevelexists==1:
                      os.curdir=os.path.join(os.curdir,self.sprites[i].filename)
 		     self.load_all_images()
 		     break
 		     
-		 #if the clicked img is not a sub-meny or back it should be be fullscreen
-		 if self.nextlevelexists[i]==0:
+		 #if the clicked img is not a sub-meny it should be be fullscreen
+		 if self.sprites[i].nextlevelexists==0:
                      self.sprites = [self.sprites[i],]
-                     self.nextlevelexists = [self.nextlevelexists[i],]
-
-                     pic=pyglet.image.load(back_img)
-                     spr = pyglet.sprite.Sprite(pic)
-                     spr.filename = 'back'
-                     self.sprites.append(spr)
-                     self.nextlevelexists.append(-1)
-
+                     self.sprites[0].nextlevelexists = -1
                      self.position_and_scale_all_images()
-
                      break
 
     def on_resize(self, width, height):
         pyglet.window.Window.on_resize(self, width, height)
+        self.position_back_sprite()
         self.position_and_scale_all_images()
 
 if __name__ == '__main__':
