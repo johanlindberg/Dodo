@@ -3,17 +3,12 @@ from __future__ import division
 import pyglet
 import os
 
-## To be put in config file:
-image_extensions = ['jpg']
-#image_extensions = ['JPG']
-#start_directory = r'c:\pics'
-start_directory = r'/home/johanlindberg/Pictures'
-#back_img = r'c:\pics\dodo_default\back.jpg'
-back_img = r'/home/johanlindberg/Pictures/Dodo/back.jpg'
-
 class Dodo(pyglet.window.Window):
     def __init__(self):
         pyglet.window.Window.__init__(self, width=800, height=600, resizable=True)
+        self.load_configuration()
+
+        os.curdir = self.params["start_directory"]
 
         self.click_handlers = {}
         self.sprites = self.load_all_images(os.curdir)
@@ -22,6 +17,17 @@ class Dodo(pyglet.window.Window):
         self.current_path = []
 
     	self.position_and_scale_all_images()
+
+    def load_configuration(self):
+        self.params = {}
+
+        fin = open("dodo.conf")
+        for line in fin.readlines():
+            key, value = line.split("=")
+            self.params[key.strip()] = eval(value) # NOTE! eval is probably not a
+                                                   # good idea in the long run!
+
+        fin.close()
 
     def load_all_images(self, directory):
         """loads all images in current directory if they have a file extension
@@ -35,7 +41,7 @@ class Dodo(pyglet.window.Window):
 
         for filename in os.listdir(directory):
             # only load images with supported extensions
-            for ext in image_extensions:
+            for ext in self.params["image_extensions"]:
                 if filename.lower().endswith(ext.lower()):
                     pic = pyglet.image.load('%s/%s' % (directory, filename))
                     spr = pyglet.sprite.Sprite(pic)
@@ -62,7 +68,7 @@ class Dodo(pyglet.window.Window):
         return sprites
 
     def load_back_sprite(self):
-    	self.back_sprite = pyglet.sprite.Sprite(pyglet.image.load(back_img))
+    	self.back_sprite = pyglet.sprite.Sprite(pyglet.image.load(self.params["back_img"]))
         self.position_back_sprite()            
        
     def position_back_sprite(self):
@@ -170,8 +176,6 @@ class Dodo(pyglet.window.Window):
         self.position_and_scale_all_images()
 
 if __name__ == '__main__':
-    	
-    os.curdir=start_directory
     dodo = Dodo()
     pyglet.app.run()
     
