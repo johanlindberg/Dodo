@@ -17,13 +17,9 @@ class Dodo(pyglet.window.Window):
 
         self.click_handlers = {}
         self.sprites = self.load_all_images(os.curdir)
+        self.load_back_sprite()
         
         self.current_path = []
-
-        # load back image
-        pic = pyglet.image.load(back_img)
-        self.back = pyglet.sprite.Sprite(pic)
-        self.back.filename = 'back'
 
     	self.position_and_scale_all_images()
 
@@ -64,6 +60,15 @@ class Dodo(pyglet.window.Window):
                 sprites = sprites[p].contents
 
         return sprites
+
+    def load_back_sprite(self):
+    	self.back_sprite = pyglet.sprite.Sprite(pyglet.image.load(back_img))
+        self.position_back_sprite()            
+       
+    def position_back_sprite(self):
+    	self.back_sprite_x_pos = self.width - self.back_sprite.width
+    	self.back_sprite_y_pos = self.height - self.back_sprite.height    
+    	self.back_sprite.position = (self.back_sprite_x_pos , self.back_sprite_y_pos)
 
     def position_and_scale_all_images(self):
         sprites = self.find_sprites().values()
@@ -134,15 +139,15 @@ class Dodo(pyglet.window.Window):
             s.draw()
 
         if len(self.current_path) > 0:
-            self.back.draw()
+            self.back_sprite.draw()
 
     def on_mouse_press(self, x, y, button, modifiers):
         # check back button first
         if len(self.current_path) > 0 and \
-           x > self.back.x and \
-           x < self.back.x + self.back.width and \
-           y > self.back.y and \
-           y < self.back.y + self.back.height:
+           x > self.back_sprite.x and \
+           x < self.back_sprite.x + self.back_sprite.width and \
+           y > self.back_sprite.y and \
+           y < self.back_sprite.y + self.back_sprite.height:
             self.current_path.pop()            
 
         else:
@@ -161,6 +166,7 @@ class Dodo(pyglet.window.Window):
 
     def on_resize(self, width, height):
         pyglet.window.Window.on_resize(self, width, height)
+        self.position_back_sprite()
         self.position_and_scale_all_images()
 
 if __name__ == '__main__':
