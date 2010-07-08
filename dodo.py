@@ -2,18 +2,20 @@ from __future__ import division
 
 import pyglet
 import os
+import time
 
 class Dodo(pyglet.window.Window):
     def __init__(self):
-        pyglet.window.Window.__init__(self, width=800, height=600, resizable=True)
+        pyglet.window.Window.__init__(self, resizable=True, fullscreen = True)
         self.load_configuration()
 
         os.curdir = self.params["start_directory"]
-
+        self.boarder_size = 20
+        self.dim_opacity = 25
+        self.max_opacity = 255
         self.click_handlers = {}
         self.sprites = self.load_all_images(os.curdir)
         self.load_back_sprite()
-        
         self.current_path = []
 
     	self.position_and_scale_all_images()
@@ -84,12 +86,12 @@ class Dodo(pyglet.window.Window):
         # c, r is the suggested matrix layout
         c, r = self.get_layout(len(sprites))
         # dx, dy is the maximum size of each image in the matrix
-        dx, dy = self.width/c, self.height/r
-        x = 0
-        y = 0
+        dx, dy = (self.width - self.boarder_size*(c + 1)) / c, (self.height - self.boarder_size*(r + 1)) / r
+        x = self.boarder_size
+        y = self.boarder_size
         i = 0
         for col in range(c):
-           y = 0
+           y = self.boarder_size
            for row in range(r):
            	#break if all pictures already drawn
                 if i == len(sprites):
@@ -109,9 +111,9 @@ class Dodo(pyglet.window.Window):
                 self.click_handlers[i] = handler
 
                 i += 1
-                y += dy
+                y += dy + self.boarder_size
 
-           x += dx
+           x += dx + self.boarder_size
               
     def get_layout(self, n):
         """Returns a tuple with a suggested matrix size for displaying <n> images
@@ -137,7 +139,7 @@ class Dodo(pyglet.window.Window):
         return (w,h)
 
     ## event handlers
-    ## --------------
+    ## --------------	
 
     def on_draw(self):
         self.clear()
@@ -148,14 +150,21 @@ class Dodo(pyglet.window.Window):
             self.back_sprite.draw()
 
     def on_mouse_press(self, x, y, button, modifiers):
+    	if modifiers == 6:
+    		#toggel between fullscreen mode by holding alt-Gr (modifiers = 6 ) and clicking anywhere
+    		if self.fullscreen == True:
+    			self.set_fullscreen(fullscreen=False, screen=None) 
+    		else:
+    			self.set_fullscreen(fullscreen=True, screen=None)
         # check back button first
+        print("modifiers value ",modifiers)
         if len(self.current_path) > 0 and \
            x > self.back_sprite.x and \
            x < self.back_sprite.x + self.back_sprite.width and \
            y > self.back_sprite.y and \
            y < self.back_sprite.y + self.back_sprite.height:
-            self.current_path.pop()            
-
+            self.current_path.pop()
+            
         else:
             sprites = self.find_sprites().values()
             for i in xrange(len(sprites)):
@@ -164,12 +173,23 @@ class Dodo(pyglet.window.Window):
                    x < sprite.x + sprite.width and \
                    y > sprite.y and \
                    y < sprite.y + sprite.height:
-                    #self.click_handlers[i](self, x, y, button, modifiers)
-                    self.current_path.append(sprite.filename)
+                    if modifiers != 2:
+                    	#  Modifiers = 2 means that ctrl is pressed.
+                    	#  Then sprite will be made almost invisible and not possible to click
+                      #self.click_handlers[i](self, x, y, button, modifiers)
+                      if sprites[i].opacity == self.max_opacity and len(sprites) > 1:
+                      	self.current_path.append(sprite.filename)
+                    
+                    else:
+                      if sprites[i].opacity == self.dim_opacity:
+                      	sprites[i].opacity = self.max_opacity
+                      else:
+                     		sprites[i].opacity = self.dim_opacity
                     break
 
         self.position_and_scale_all_images()
-
+        
+        
     def on_resize(self, width, height):
         pyglet.window.Window.on_resize(self, width, height)
         self.position_back_sprite()
