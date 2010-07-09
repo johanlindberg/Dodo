@@ -10,9 +10,11 @@ class Dodo(pyglet.window.Window):
         self.load_configuration()
 
         os.curdir = self.params["start_directory"]
-        self.boarder_size = 20
-        self.dim_opacity = 25
-        self.max_opacity = 255
+        #self.boarder_size = 20
+        #self.dim_opacity = 25
+        #self.max_opacity = 255
+        self.time=time.time()
+        #self.min_time_between_clicks = 0.7
         self.click_handlers = {}
         self.sprites = self.load_all_images(os.curdir)
         self.load_back_sprite()
@@ -86,12 +88,12 @@ class Dodo(pyglet.window.Window):
         # c, r is the suggested matrix layout
         c, r = self.get_layout(len(sprites))
         # dx, dy is the maximum size of each image in the matrix
-        dx, dy = (self.width - self.boarder_size*(c + 1)) / c, (self.height - self.boarder_size*(r + 1)) / r
-        x = self.boarder_size
-        y = self.boarder_size
+        dx, dy = (self.width - self.params["boarder_size"]*(c + 1)) / c, (self.height - self.params["boarder_size"]*(r + 1)) / r
+        x = self.params["boarder_size"]
+        y = self.params["boarder_size"]
         i = 0
         for col in range(c):
-           y = self.boarder_size
+           y = self.params["boarder_size"]
            for row in range(r):
            	#break if all pictures already drawn
                 if i == len(sprites):
@@ -111,9 +113,9 @@ class Dodo(pyglet.window.Window):
                 self.click_handlers[i] = handler
 
                 i += 1
-                y += dy + self.boarder_size
+                y += dy + self.params["boarder_size"]
 
-           x += dx + self.boarder_size
+           x += dx + self.params["boarder_size"]
               
     def get_layout(self, n):
         """Returns a tuple with a suggested matrix size for displaying <n> images
@@ -150,12 +152,18 @@ class Dodo(pyglet.window.Window):
             self.back_sprite.draw()
 
     def on_mouse_press(self, x, y, button, modifiers):
+    	#toggel between fullscreen mode by holding alt-Gr (modifiers = 6 ) and clicking anywhere
     	if modifiers == 6:
-    		#toggel between fullscreen mode by holding alt-Gr (modifiers = 6 ) and clicking anywhere
     		if self.fullscreen == True:
     			self.set_fullscreen(fullscreen=False, screen=None) 
     		else:
     			self.set_fullscreen(fullscreen=True, screen=None)
+
+        #check if params["min_time_between_clicks"] has gone since last click
+        if time.time() - self.time < self.params["min_time_between_clicks"]:
+        	return(1)
+        self.time=time.time()
+
         # check back button first
         print("modifiers value ",modifiers)
         if len(self.current_path) > 0 and \
@@ -177,14 +185,14 @@ class Dodo(pyglet.window.Window):
                     	#  Modifiers = 2 means that ctrl is pressed.
                     	#  Then sprite will be made almost invisible and not possible to click
                       #self.click_handlers[i](self, x, y, button, modifiers)
-                      if sprites[i].opacity == self.max_opacity and len(sprites) > 1:
+                      if sprites[i].opacity == self.params["max_opacity"] and len(sprites) > 1:
                       	self.current_path.append(sprite.filename)
                     
                     else:
-                      if sprites[i].opacity == self.dim_opacity:
-                      	sprites[i].opacity = self.max_opacity
+                      if sprites[i].opacity == self.params["dim_opacity"]:
+                      	sprites[i].opacity = self.params["max_opacity"]
                       else:
-                     		sprites[i].opacity = self.dim_opacity
+                     		sprites[i].opacity = self.params["dim_opacity"]
                     break
 
         self.position_and_scale_all_images()
