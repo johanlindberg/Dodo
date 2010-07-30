@@ -6,22 +6,30 @@ import time
 
 class Dodo(pyglet.window.Window):
     def __init__(self):
-        pyglet.window.Window.__init__(self, resizable=True, fullscreen = True)
         self.load_configuration()
-
         os.curdir = self.params["start_directory"]
-        #self.boarder_size = 20
-        #self.dim_opacity = 25
-        #self.max_opacity = 255
-        self.exclude_list = ["utelek","film","people"]
         self.time=time.time()
-        #self.min_time_between_clicks = 0.7
         self.click_handlers = {}
+        self.exclude_folders_list = self.get_exclude_folder_list()
+        pyglet.window.Window.__init__(self, resizable=True, fullscreen = True)
         self.sprites = self.load_all_images(os.curdir)
         self.load_back_sprite()
         self.current_path = []
-
+        
     	self.position_and_scale_all_images()
+
+    def get_exclude_folder_list(self):
+    	""" In the dodo.conf file there is a exclude_folders_hash that contains a number of lists with folder names to be excluded from loading. 
+    	   This function lets the user choose one of the lists at application startup"""
+    	i=1
+    	temparray=[]
+    	print("Configurations:")
+    	for key in self.params["exclude_folders_hash"].iterkeys():
+    		print i,key
+    		i += 1
+    		temparray.append(key)    	    	
+    	x = input ('Choose configuration number ')
+    	return self.params["exclude_folders_hash"][temparray[x-1]] 
 
     def load_configuration(self):
         self.params = {}
@@ -48,9 +56,9 @@ class Dodo(pyglet.window.Window):
             # only load images with supported extensions
             for ext in self.params["image_extensions"]:
                 fname, extension = os.path.splitext(filename)
-                print(filename,extension.lower(), ext.lower())
+                #print(filename,extension.lower(), ext.lower())
                 if extension.lower() == ext.lower():
-                    if  ((fname in self.params["exclude_folder_list"]) and (os.path.isdir(os.path.join(directory,fname)))) :
+                    if  ((fname in self.exclude_folders_list) and (os.path.isdir(os.path.join(directory,fname)))) :
                     	break #Do not load image and subfolder images if defined in the exclude_folder_list in dodo.conf
                     pic = pyglet.image.load('%s/%s' % (directory, filename))
                     spr = pyglet.sprite.Sprite(pic)
@@ -170,7 +178,7 @@ class Dodo(pyglet.window.Window):
         self.time=time.time()
 
         # check back button first
-        print("modifiers value ",modifiers)
+        #print("modifiers value ",modifiers)
         if len(self.current_path) > 0 and \
            x > self.back_sprite.x and \
            x < self.back_sprite.x + self.back_sprite.width and \
