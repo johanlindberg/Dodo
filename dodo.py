@@ -77,7 +77,7 @@ class Dodo(pyglet.window.Window):
        
     def position_back_sprite(self):
     	self.back_sprite_x_pos = self.width - self.back_sprite.width
-    	self.back_sprite_y_pos = self.height - self.back_sprite.height    
+    	self.back_sprite_y_pos = 0   
     	self.back_sprite.position = (self.back_sprite_x_pos , self.back_sprite_y_pos)
 
     def position_and_scale_all_images(self):
@@ -90,10 +90,10 @@ class Dodo(pyglet.window.Window):
         # dx, dy is the maximum size of each image in the matrix
         dx, dy = (self.width - self.params["boarder_size"]*(c + 1)) / c, (self.height - self.params["boarder_size"]*(r + 1)) / r
         x = self.params["boarder_size"]
-        y = self.params["boarder_size"]
+        y = self.height - dy - self.params["boarder_size"]
         i = 0
         for col in range(c):
-           y = self.params["boarder_size"]
+           y = self.height - dy - self.params["boarder_size"]
            for row in range(r):
            	#break if all pictures already drawn
                 if i == len(sprites):
@@ -113,7 +113,7 @@ class Dodo(pyglet.window.Window):
                 self.click_handlers[i] = handler
 
                 i += 1
-                y += dy + self.params["boarder_size"]
+                y = y - dy - self.params["boarder_size"]
 
            x += dx + self.params["boarder_size"]
               
