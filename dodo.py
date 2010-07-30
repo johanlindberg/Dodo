@@ -21,14 +21,19 @@ class Dodo(pyglet.window.Window):
     def get_exclude_folder_list(self):
     	""" In the dodo.conf file there is a exclude_folders_hash that contains a number of lists with folder names to be excluded from loading. 
     	   This function lets the user choose one of the lists at application startup"""
-    	i=1
+    	
+    	i=2
     	temparray=[]
+    	temparray.append('Alla')
     	print("Configurations:")
+    	print("1 Alla") 
     	for key in self.params["exclude_folders_hash"].iterkeys():
     		print i,key
     		i += 1
     		temparray.append(key)    	    	
-    	x = input ('Choose configuration number ')
+    	x = input ('Choose configuration number: ')
+    	if x == 1 :
+    	   return []
     	return self.params["exclude_folders_hash"][temparray[x-1]] 
 
     def load_configuration(self):
