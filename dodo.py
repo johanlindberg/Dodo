@@ -13,6 +13,7 @@ class Dodo(pyglet.window.Window):
         #self.boarder_size = 20
         #self.dim_opacity = 25
         #self.max_opacity = 255
+        self.exclude_list = ["utelek","film","people"]
         self.time=time.time()
         #self.min_time_between_clicks = 0.7
         self.click_handlers = {}
@@ -46,13 +47,17 @@ class Dodo(pyglet.window.Window):
         for filename in os.listdir(directory):
             # only load images with supported extensions
             for ext in self.params["image_extensions"]:
-                if filename.lower().endswith(ext.lower()):
+                fname, extension = os.path.splitext(filename)
+                print(filename,extension.lower(), ext.lower())
+                if extension.lower() == ext.lower():
+                    if  ((fname in self.params["exclude_folder_list"]) and (os.path.isdir(os.path.join(directory,fname)))) :
+                    	break #Do not load image and subfolder images if defined in the exclude_folder_list in dodo.conf
                     pic = pyglet.image.load('%s/%s' % (directory, filename))
                     spr = pyglet.sprite.Sprite(pic)
                     
                     # meta data
                     spr.contents = {}
-                    fname, extension = os.path.splitext(filename)
+                    #fname, extension = os.path.splitext(filename)
                     if os.path.isdir(os.path.join(directory,fname)):
                         spr.contents = self.load_all_images(os.path.join(directory,fname))
 
