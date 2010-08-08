@@ -6,6 +6,7 @@ import time
 
 class Dodo_obj:
     def __init__(self, directory, filename):
+	self.params = load_configuration()
 	self.path = directory 
 	self.name, extension = os.path.splitext(filename) 
 	pic = pyglet.image.load('%s/%s' % (directory, filename))
@@ -17,16 +18,16 @@ class Dodo_obj:
         
     def togle_sprite_visible(self):
         if self.visible == False:
-        	self.sprite.opacity = dodo.params["max_opacity"]
+        	self.sprite.opacity = self.params["max_opacity"]
         	self.visible = True
         else:
-                self.sprite.opacity = dodo.params["dim_opacity"]
+                self.sprite.opacity = self.params["dim_opacity"]
                 self.visible = False
 
         
 class Dodo(pyglet.window.Window):
     def __init__(self):
-        self.load_configuration()
+        self.params = load_configuration()
         self.current_dodo = False
         os.curdir = self.params["start_directory"]
         self.time=time.time()
@@ -57,17 +58,7 @@ class Dodo(pyglet.window.Window):
     	   return []
     	return self.params["exclude_folders_hash"][temparray[x-1]] 
 
-    def load_configuration(self):
-        self.params = {}
-
-        fin = open("dodo.conf")
-        for line in fin.readlines():
-            key, value = line.split("=")
-            self.params[key.strip()] = eval(value) # NOTE! eval is probably not a
-                                                   # good idea in the long run!
-
-        fin.close()
-
+    
     def load_all_images(self, directory):
         """loads all images in current directory if they have a file extension
         included in <image_extensions>.
@@ -237,6 +228,18 @@ class Dodo(pyglet.window.Window):
         pyglet.window.Window.on_resize(self, width, height)
         self.position_back_sprite()
         self.position_and_scale_all_images()
+
+def load_configuration():
+        params = {}
+
+        fin = open("dodo.conf")
+        for line in fin.readlines():
+            key, value = line.split("=")
+            params[key.strip()] = eval(value) # NOTE! eval is probably not a
+                                                   # good idea in the long run!
+
+        fin.close()
+	return params
 
 if __name__ == '__main__':
     dodo = Dodo()
