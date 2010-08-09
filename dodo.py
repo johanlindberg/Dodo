@@ -3,16 +3,53 @@ from __future__ import division
 import pyglet
 import os
 import time
+import media_player
 
+class Dodo_obj:
+    def __init__(self, directory, filename):
+	self.params = load_configuration()
+	self.path = directory 
+	self.name, extension = os.path.splitext(filename) 
+	pic = pyglet.image.load('%s/%s' % (directory, filename))
+	print('%s/%s' % (directory, filename))
+	print("df")
+	self.sprite = pyglet.sprite.Sprite(pic)
+	
+	#Check if there is a video file
+	
+	self.video_exist = False
+	for ext in self.params["video_extensions"]:
+	    print(os.path.join(directory,self.name+ext))
+            if os.path.isfile(os.path.join(directory,self.name+ext)):
+                self.video_exist = True
+                self.video_source = pyglet.media.load(os.path.join(directory,self.name+ext))
+
+        self.sound_exist = False #TODO look for sound
+        self.is_dir = os.path.isdir(os.path.join(directory,self.name))
+        self.visible = True
+        
+    def togle_sprite_visible(self):
+        if self.visible == False:
+        	self.sprite.opacity = self.params["max_opacity"]
+        	self.visible = True
+        else:
+                self.sprite.opacity = self.params["dim_opacity"]
+                self.visible = False
+    
+    
+
+        
 class Dodo(pyglet.window.Window):
     def __init__(self):
-        self.load_configuration()
+        self.params = load_configuration()
+        self.current_dodo = False
         os.curdir = self.params["start_directory"]
         self.time=time.time()
         self.click_handlers = {}
-        self.exclude_folders_list = self.get_exclude_folder_list()
-        pyglet.window.Window.__init__(self, resizable=True, fullscreen = True)
+        #self.exclude_folders_list = self.get_exclude_folder_list()
+        self.sprites = []
         self.sprites = self.load_all_images(os.curdir)
+        pyglet.window.Window.__init__(self, resizable=True, fullscreen=True)        
         self.load_back_sprite()
         self.current_path = []
         
@@ -36,17 +73,7 @@ class Dodo(pyglet.window.Window):
     	   return []
     	return self.params["exclude_folders_hash"][temparray[x-1]] 
 
-    def load_configuration(self):
-        self.params = {}
-
-        fin = open("dodo.conf")
-        for line in fin.readlines():
-            key, value = line.split("=")
-            self.params[key.strip()] = eval(value) # NOTE! eval is probably not a
-                                                   # good idea in the long run!
-
-        fin.close()
-
+    
     def load_all_images(self, directory):
         """loads all images in current directory if they have a file extension
         included in <image_extensions>.
@@ -55,7 +82,7 @@ class Dodo(pyglet.window.Window):
         If an image is associated with a directory it's sprites are stored in
         a list accessed with sprite.contents."""
 
-        result = {}
+        result = []
 
         for filename in os.listdir(directory):
             # only load images with supported extensions
@@ -63,31 +90,21 @@ class Dodo(pyglet.window.Window):
                 fname, extension = os.path.splitext(filename)
                 #print(filename,extension.lower(), ext.lower())
                 if extension.lower() == ext.lower():
-                    if  ((fname in self.exclude_folders_list) and (os.path.isdir(os.path.join(directory,fname)))) :
-                    	break #Do not load image and subfolder images if defined in the exclude_folder_list in dodo.conf
-                    pic = pyglet.image.load('%s/%s' % (directory, filename))
-                    spr = pyglet.sprite.Sprite(pic)
-                    
-                    # meta data
-                    spr.contents = {}
-                    #fname, extension = os.path.splitext(filename)
-                    if os.path.isdir(os.path.join(directory,fname)):
-                        spr.contents = self.load_all_images(os.path.join(directory,fname))
-
-                    spr.filename = filename                    
-                    result[filename] = spr
-
+                    temp = (Dodo_obj(directory,filename))
+                    if temp.is_dir:
+                       result.extend(self.load_all_images(os.path.join(directory,temp.name)))
+                    result.append(temp)
         return result
 
-    def find_sprites(self):
-        sprites = self.sprites
-        for p in self.current_path:
-            if len(sprites[p].contents.values()) == 0:
-                sprites = { p : sprites[p] }
-            else:
-                sprites = sprites[p].contents
-
-        return sprites
+    def find_dodos(self):
+    	result = []
+    	if self.current_dodo == False:
+    	    for obj in self.sprites:
+            	if obj.path == os.curdir:
+               		result.append(obj)
+        else:
+        	result=[self.current_dodo]
+        return result
 
     def load_back_sprite(self):
     	self.back_sprite = pyglet.sprite.Sprite(pyglet.image.load(self.params["back_img"]))
@@ -99,12 +116,12 @@ class Dodo(pyglet.window.Window):
     	self.back_sprite.position = (self.back_sprite_x_pos , self.back_sprite_y_pos)
 
     def position_and_scale_all_images(self):
-        sprites = self.find_sprites().values()
-        for s in sprites:
-            s.scale = 1
+        dodos = self.find_dodos()
+        for s in dodos:
+            s.sprite.scale = 1
 
         # c, r is the suggested matrix layout
-        c, r = self.get_layout(len(sprites))
+        c, r = self.get_layout(len(dodos))
         # dx, dy is the maximum size of each image in the matrix
         dx, dy = (self.width - self.params["boarder_size"]*(c + 1)) / c, (self.height - self.params["boarder_size"]*(r + 1)) / r
         x = self.params["boarder_size"]
@@ -114,16 +131,16 @@ class Dodo(pyglet.window.Window):
            y = self.height - dy - self.params["boarder_size"]
            for row in range(r):
            	#break if all pictures already drawn
-                if i == len(sprites):
+                if i == len(dodos):
                    break
 
                 # Scale the image to fit the area.
-	    	scale = float(dx / sprites[i].width)
-	    	if scale > float(dy / sprites[i].height):
-	    	     scale = float(dy / sprites[i].height)
+	    	scale = float(dx / dodos[i].sprite.width)
+	    	if scale > float(dy / dodos[i].sprite.height):
+	    	     scale = float(dy / dodos[i].sprite.height)
 	    	
-                sprites[i].position=(x,y)
-                sprites[i].scale = scale
+                dodos[i].sprite.position=(x,y)
+                dodos[i].sprite.scale = scale
 
                 # attach an on_mouse_click handler to this sprite
                 def handler(self, x, y, button, modifiers):
@@ -158,13 +175,34 @@ class Dodo(pyglet.window.Window):
 
         return (w,h)
 
+
+
+
+
+    def play_video(self,video_source):
+        self.player = pyglet.media.Player()
+        self.window = media_player.PlayerWindow(self.player)
+        self.player.queue(video_source)        
+        self.window.gui_update_source()
+        self.window.set_default_video_size()
+        self.window.set_fullscreen()
+        self.window.set_visible(True)
+        self.player.play()
+        self.window.gui_update_state()
+        self.window.switch_to()
+    
+    def stop_video(self):
+        self.player.pause()
+        self.window.set_visible(False)          
+
+
     ## event handlers
     ## --------------	
 
     def on_draw(self):
         self.clear()
-        for s in self.find_sprites().values():
-            s.draw()
+        for s in self.find_dodos():
+            s.sprite.draw()
 
         if len(self.current_path) > 0:
             self.back_sprite.draw()
@@ -189,12 +227,17 @@ class Dodo(pyglet.window.Window):
            x < self.back_sprite.x + self.back_sprite.width and \
            y > self.back_sprite.y and \
            y < self.back_sprite.y + self.back_sprite.height:
-            self.current_path.pop()
+            if self.current_dodo != False:
+            	self.current_dodo = False
+           	
+            else:
+           	self.current_path.pop()
+            	os.curdir,dummy = os.path.split(os.curdir)
             
         else:
-            sprites = self.find_sprites().values()
-            for i in xrange(len(sprites)):
-                sprite = sprites[i]
+            dodos = self.find_dodos()
+            for i in xrange(len(dodos)):
+                sprite = dodos[i].sprite
                 if x > sprite.x and \
                    x < sprite.x + sprite.width and \
                    y > sprite.y and \
@@ -203,14 +246,20 @@ class Dodo(pyglet.window.Window):
                     	#  Modifiers = 2 means that ctrl is pressed.
                     	#  Then sprite will be made almost invisible and not possible to click
                       #self.click_handlers[i](self, x, y, button, modifiers)
-                      if sprites[i].opacity == self.params["max_opacity"] and len(sprites) > 1:
-                      	self.current_path.append(sprite.filename)
+                      if dodos[i].visible:
+                      	if dodos[i].is_dir:
+                      	   self.current_path.append(dodos[i].name)
+                      	   os.curdir=os.path.join(os.curdir,dodos[i].name)
+                      	else:
+                      	     if self.current_dodo == False:
+                      	         self.current_dodo = dodos[i]
+                      	     else:
+                      	     	if self.current_dodo.video_exist:
+                      	     	    self.play_video(self.current_dodo.video_source)
+                      	     	    
                     
                     else:
-                      if sprites[i].opacity == self.params["dim_opacity"]:
-                      	sprites[i].opacity = self.params["max_opacity"]
-                      else:
-                     		sprites[i].opacity = self.params["dim_opacity"]
+                      dodos[i].togle_sprite_visible()
                     break
 
         self.position_and_scale_all_images()
@@ -220,6 +269,18 @@ class Dodo(pyglet.window.Window):
         pyglet.window.Window.on_resize(self, width, height)
         self.position_back_sprite()
         self.position_and_scale_all_images()
+
+def load_configuration():
+        params = {}
+
+        fin = open("dodo.conf")
+        for line in fin.readlines():
+            key, value = line.split("=")
+            params[key.strip()] = eval(value) # NOTE! eval is probably not a
+                                                   # good idea in the long run!
+
+        fin.close()
+	return params
 
 if __name__ == '__main__':
     dodo = Dodo()
