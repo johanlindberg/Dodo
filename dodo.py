@@ -1,6 +1,7 @@
 from __future__ import division 
 
 import pyglet
+import sys
 import os
 import time
 import media_player
@@ -270,19 +271,26 @@ class Dodo(pyglet.window.Window):
         self.position_back_sprite()
         self.position_and_scale_all_images()
 
+CONFIGURATION_FILE = "dodo.conf"
 def load_configuration():
-        params = {}
+    params = {}
 
-        fin = open("dodo.conf")
-        for line in fin.readlines():
-            key, value = line.split("=")
-            params[key.strip()] = eval(value) # NOTE! eval is probably not a
-                                                   # good idea in the long run!
+    fin = open(CONFIGURATION_FILE) # XXX Add some error checking here!
+    for line in fin.readlines():
+        key, value = line.split("=")
+        params[key.strip()] = eval(value) # NOTE! eval is probably not a
+                                              # good idea in the long run!
 
-        fin.close()
-	return params
+    fin.close()
+    return params
 
 if __name__ == '__main__':
+    try:
+        if len(sys.argv) > 1:
+            CONFIGURATION_FILE = sys.argv[-1] # last command line argument
+    except Exception:
+        print "Usage: [python] dodo.py [<configuration-file>]\n"
+    
     dodo = Dodo()
     pyglet.app.run()
     
