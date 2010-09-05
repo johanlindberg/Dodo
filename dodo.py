@@ -1,10 +1,8 @@
 from __future__ import division 
 
 import pyglet
-import sys
 import os
 import time
-import media_player
 
 class Dodo_obj:
     def __init__(self, directory, filename):
@@ -12,20 +10,26 @@ class Dodo_obj:
 	self.path = directory 
 	self.name, extension = os.path.splitext(filename) 
 	pic = pyglet.image.load('%s/%s' % (directory, filename))
-	print('%s/%s' % (directory, filename))
-	print("df")
 	self.sprite = pyglet.sprite.Sprite(pic)
 	
-	#Check if there is a video file
-	
+	#Check_for_video
 	self.video_exist = False
 	for ext in self.params["video_extensions"]:
-	    print(os.path.join(directory,self.name+ext))
+	    #print(os.path.join(directory,self.name+ext))
             if os.path.isfile(os.path.join(directory,self.name+ext)):
                 self.video_exist = True
+                print (os.path.join(directory,self.name+ext))
                 self.video_source = pyglet.media.load(os.path.join(directory,self.name+ext))
+        
+        self.sound_exist = False
+        #Check for sound
+        for ext in self.params["sound_extensions"]:
+	    #print(os.path.join(directory,self.name+ext))
+            if os.path.isfile(os.path.join(directory,self.name+ext)):
+                self.sound_exist = True
+                print (os.path.join(directory,self.name+ext))
+                self.sound_source = pyglet.media.load(os.path.join(directory,self.name+ext), streaming=False)
 
-        self.sound_exist = False #TODO look for sound
         self.is_dir = os.path.isdir(os.path.join(directory,self.name))
         self.visible = True
         
@@ -36,8 +40,6 @@ class Dodo_obj:
         else:
                 self.sprite.opacity = self.params["dim_opacity"]
                 self.visible = False
-    
-    
 
         
 class Dodo(pyglet.window.Window):
@@ -53,7 +55,6 @@ class Dodo(pyglet.window.Window):
         pyglet.window.Window.__init__(self, resizable=True, fullscreen=True)        
         self.load_back_sprite()
         self.current_path = []
-        
     	self.position_and_scale_all_images()
 
     def get_exclude_folder_list(self):
@@ -175,27 +176,11 @@ class Dodo(pyglet.window.Window):
                     h += 1 # grow in height
 
         return (w,h)
-
-
-
-
-
-    def play_video(self,video_source):
-        self.player = pyglet.media.Player()
-        self.window = media_player.PlayerWindow(self.player)
-        self.player.queue(video_source)        
-        self.window.gui_update_source()
-        self.window.set_default_video_size()
-        self.window.set_fullscreen()
-        self.window.set_visible(True)
-        self.player.play()
-        self.window.gui_update_state()
-        self.window.switch_to()
-    
-    def stop_video(self):
-        self.player.pause()
-        self.window.set_visible(False)          
-
+        
+        
+    def play_sound(self,sound_source):
+     	print("play_sound")
+        sound_source.play()
 
     ## event handlers
     ## --------------	
@@ -254,11 +239,8 @@ class Dodo(pyglet.window.Window):
                       	else:
                       	     if self.current_dodo == False:
                       	         self.current_dodo = dodos[i]
-                      	     else:
-                      	     	if self.current_dodo.video_exist:
-                      	     	    self.play_video(self.current_dodo.video_source)
-                      	     	    
-                    
+                 	     if self.current_dodo.sound_exist:
+                      	     	 self.play_sound(self.current_dodo.sound_source)
                     else:
                       dodos[i].togle_sprite_visible()
                     break
@@ -271,26 +253,19 @@ class Dodo(pyglet.window.Window):
         self.position_back_sprite()
         self.position_and_scale_all_images()
 
-CONFIGURATION_FILE = "dodo.conf"
 def load_configuration():
-    params = {}
+        params = {}
 
-    fin = open(CONFIGURATION_FILE) # XXX Add some error checking here!
-    for line in fin.readlines():
-        key, value = line.split("=")
-        params[key.strip()] = eval(value) # NOTE! eval is probably not a
-                                              # good idea in the long run!
+        fin = open("dodo.conf")
+        for line in fin.readlines():
+            key, value = line.split("=")
+            params[key.strip()] = eval(value) # NOTE! eval is probably not a
+                                                   # good idea in the long run!
 
-    fin.close()
-    return params
+        fin.close()
+	return params
 
 if __name__ == '__main__':
-    try:
-        if len(sys.argv) > 1:
-            CONFIGURATION_FILE = sys.argv[-1] # last command line argument
-    except Exception:
-        print "Usage: [python] dodo.py [<configuration-file>]\n"
-    
     dodo = Dodo()
     pyglet.app.run()
     
