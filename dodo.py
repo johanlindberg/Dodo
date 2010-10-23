@@ -18,7 +18,7 @@ class Dodo_obj:
 	    #print(os.path.join(directory,self.name+ext))
             if os.path.isfile(os.path.join(directory,self.name+ext)):
                 self.video_exist = True
-                print (os.path.join(directory,self.name+ext))
+                #print (os.path.join(directory,self.name+ext))
                 self.video_source = pyglet.media.load(os.path.join(directory,self.name+ext))
         
         self.sound_exist = False
@@ -27,7 +27,7 @@ class Dodo_obj:
 	    #print(os.path.join(directory,self.name+ext))
             if os.path.isfile(os.path.join(directory,self.name+ext)):
                 self.sound_exist = True
-                print (os.path.join(directory,self.name+ext))
+                #print (os.path.join(directory,self.name+ext))
                 self.sound_source = pyglet.media.load(os.path.join(directory,self.name+ext), streaming=False)
 
         self.is_dir = os.path.isdir(os.path.join(directory,self.name))
@@ -179,7 +179,6 @@ class Dodo(pyglet.window.Window):
         
         
     def play_sound(self,sound_source):
-     	print("play_sound")
         sound_source.play()
 
     ## event handlers
@@ -192,6 +191,19 @@ class Dodo(pyglet.window.Window):
 
         if len(self.current_path) > 0:
             self.back_sprite.draw()
+    
+    def on_key_press(self,symbol, modifiers):
+    	#Reload all images when key "i" is pressed 
+        if symbol == 105:
+          os.curdir = self.params["start_directory"]
+          self.sprites = []
+          self.sprites = self.load_all_images(self.params["start_directory"])
+          self.current_dodo = False
+          self.current_path = []
+          print(self.current_path)
+          print(len(self.sprites))
+          self.position_and_scale_all_images()
+                  
 
     def on_mouse_press(self, x, y, button, modifiers):
     	#toggel between fullscreen mode by holding alt-Gr (modifiers = 6 ) and clicking anywhere
