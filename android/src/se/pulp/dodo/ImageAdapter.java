@@ -1,4 +1,4 @@
-package se.pulp;
+package se.pulp.dodo;
 
 import android.content.Context;
 import android.util.DisplayMetrics;
@@ -10,11 +10,13 @@ import android.widget.ImageView;
 
 public class ImageAdapter extends BaseAdapter {
     private Context mContext;
+    private Thumbnails thumbnails;
     private int displayWidth;
     private int preferredSize;
     
-    public ImageAdapter(Context c) {
+    public ImageAdapter(Context c, Thumbnails t) {
         mContext = c;
+        thumbnails = t;
         
         DisplayMetrics displayMetrics = mContext.getApplicationContext().getResources().getDisplayMetrics();
         displayWidth = displayMetrics.widthPixels;
@@ -24,7 +26,7 @@ public class ImageAdapter extends BaseAdapter {
     }
 
     public int getCount() {
-        return mThumbIds.length;
+        return thumbnails.getDrawables().size();
     }
 
     public Object getItem(int position) {
@@ -48,18 +50,8 @@ public class ImageAdapter extends BaseAdapter {
             imageView = (ImageView) convertView;
         }
 
-        imageView.setImageResource(mThumbIds[position]);
+        imageView.setImageDrawable(thumbnails.getDrawables().get(position));
         return imageView;
     }
 
-    private Integer[] mThumbIds = {
-    		R.drawable.sample_0,
-    		R.drawable.sample_1,
-    		R.drawable.sample_2,
-    		R.drawable.sample_3,
-    		R.drawable.sample_4,
-    		R.drawable.sample_5,
-    		R.drawable.sample_6,
-    		R.drawable.sample_7
-    };
 }
