@@ -22,8 +22,8 @@ public final class R {
         public static final int sample_7=0x7f020008;
     }
     public static final class id {
-        public static final int connect=0x7f060001;
         public static final int gridview=0x7f060000;
+        public static final int root_folder=0x7f060001;
     }
     public static final class layout {
         public static final int main=0x7f030000;
@@ -33,6 +33,6 @@ public final class R {
     }
     public static final class string {
         public static final int app_name=0x7f040000;
-        public static final int connect=0x7f040001;
+        public static final int root_folder=0x7f040001;
     }
 }

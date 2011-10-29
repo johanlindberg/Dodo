@@ -1,4 +1,4 @@
-package se.pulp.dodo;
+package se.pulp.dodo.dropbox;
 
 import android.content.Context;
 import android.util.DisplayMetrics;
@@ -8,17 +8,23 @@ import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
 
+import com.dropbox.client2.DropboxAPI;
+
 public class ImageAdapter extends BaseAdapter {
-    private Context mContext;
+    
+	private Context context;
     private Thumbnails thumbnails;
+    
     private int displayWidth;
     private int preferredSize;
     
-    public ImageAdapter(Context c, Thumbnails t) {
-        mContext = c;
-        thumbnails = t;
+    public ImageAdapter(Context c, DropboxAPI dropbox, String path, GridView view) {
+        context = c;
         
-        DisplayMetrics displayMetrics = mContext.getApplicationContext().getResources().getDisplayMetrics();
+        thumbnails = new Thumbnails(context, dropbox, path, view);
+        thumbnails.execute();
+        
+        DisplayMetrics displayMetrics = context.getApplicationContext().getResources().getDisplayMetrics();
         displayWidth = displayMetrics.widthPixels;
         
         // preferredSize assumes 3 columns and a padding of 4px
@@ -40,7 +46,7 @@ public class ImageAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
     	ImageView imageView;
         if (convertView == null) {
-            imageView = new ImageView(mContext);
+            imageView = new ImageView(context);
             imageView.setLayoutParams(new GridView.LayoutParams(preferredSize, preferredSize));
 
             imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);

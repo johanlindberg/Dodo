@@ -1,4 +1,4 @@
-package se.pulp.dodo;
+package se.pulp.dodo.dropbox;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -11,6 +11,7 @@ import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
+import android.widget.GridView;
 import android.widget.Toast;
 
 import com.dropbox.client2.DropboxAPI;
@@ -36,17 +37,21 @@ public class Thumbnails extends AsyncTask<Void, Long, Boolean> {
 
     private boolean canceled;
     private Long numberOfThumbnails;
-    private String err;
+    private String err = null;
+    
+    private GridView view;
 
-    public Thumbnails(Context context, DropboxAPI<?> api, String path) {
+    public Thumbnails(Context context, DropboxAPI<?> api, String path, GridView view) {
         // We set the context this way so we don't accidentally leak activities
         this.context = context.getApplicationContext();
 
         this.dropbox = api;
         this.path = path;
+        
+        this.view = view;
 
         mDialog = new ProgressDialog(context);
-        mDialog.setMessage("Downloading Images");
+        mDialog.setMessage("Loading " + path);
         mDialog.setButton("Cancel", new OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
                 canceled = true;
@@ -84,47 +89,39 @@ public class Thumbnails extends AsyncTask<Void, Long, Boolean> {
 
             // Make a list of everything in it that we can get a thumbnail for
             ArrayList<Entry> thumbs = new ArrayList<Entry>();
+            numberOfThumbnails = new Long(dirent.contents.size());
             for (Entry ent: dirent.contents) {
                 if (ent.thumbExists) {
                     // Add it to the list of thumbs we can choose from
                     thumbs.add(ent);
+
+                    String cachePath = context.getCacheDir().getAbsolutePath() + ent.path;
+                    try {
+                    	fos = context.openFileOutput(cachePath, context.MODE_PRIVATE);
+                    	//fos = new FileOutputStream(cachePath);
+                    } catch (FileNotFoundException e) {
+                    	err = "Couldn't create a local file to store the image";
+                    	return false;
+                    }
+
+		            // This downloads a smaller, thumbnail version of the file.  The
+		            // API to download the actual file is roughly the same.
+		            dropbox.getThumbnail(path, fos, ThumbSize.BESTFIT_480x320, ThumbFormat.JPEG, null);
+		            
+		            if (canceled) {
+		                return false;
+		            }
+		
+		            drawables.add(Drawable.createFromPath(cachePath));
                 }
             }
-
-            if (canceled) {
-                return false;
-            }
-
-            if (thumbs.size() == 0) {
-                // No thumbs in that directory
-                err = "No pictures in that directory";
-                return false;
-            }
-
-            // Populate GridView with thumbnails
-            for (Entry entry: thumbs) {
-            	String cachePath = context.getCacheDir().getAbsolutePath() + "/" + entry.path;
-            	try {
-            		fos = new FileOutputStream(cachePath);
-            	} catch (FileNotFoundException e) {
-            		err = "Couldn't create a local file to store the image";
-            		return false;
-            	}
-
-	            // This downloads a smaller, thumbnail version of the file.  The
-	            // API to download the actual file is roughly the same.
-	            dropbox.getThumbnail(path, fos, ThumbSize.BESTFIT_960x640, ThumbFormat.JPEG, null);
-	            if (canceled) {
-	                return false;
-	            }
-	
-	            drawables.add(Drawable.createFromPath(cachePath));
-            }
             
+            numberOfThumbnails = new Long(thumbs.size());
             return true;
 
         } catch (DropboxUnlinkedException e) {
             // The AuthSession wasn't properly authenticated or user unlinked.
+        	err = "Idiot!";
         } catch (DropboxPartialFileException e) {
             // We canceled the operation
             err = "Download canceled";
@@ -133,22 +130,30 @@ public class Thumbnails extends AsyncTask<Void, Long, Boolean> {
             // but we don't do anything special with them here.
             if (e.error == DropboxServerException._304_NOT_MODIFIED) {
                 // won't happen since we don't pass in revision with metadata
+            	err = "Not modified";
             } else if (e.error == DropboxServerException._401_UNAUTHORIZED) {
                 // Unauthorized, so we should unlink them.  You may want to
                 // automatically log the user out in this case.
+            	err = "Unauthorized";
             } else if (e.error == DropboxServerException._403_FORBIDDEN) {
                 // Not allowed to access this
+            	err = "Forbidden";
             } else if (e.error == DropboxServerException._404_NOT_FOUND) {
                 // path not found (or if it was the thumbnail, can't be
                 // thumbnailed)
+            	err = "Not found";
             } else if (e.error == DropboxServerException._406_NOT_ACCEPTABLE) {
                 // too many entries to return
+            	err = "Not acceptable";
             } else if (e.error == DropboxServerException._415_UNSUPPORTED_MEDIA) {
                 // can't be thumbnailed
+            	err = "Unsupported media";
             } else if (e.error == DropboxServerException._507_INSUFFICIENT_STORAGE) {
                 // user is over quota
+            	err = "Insufficient storage";
             } else {
                 // Something else
+            	err = "whatever!";
             }
             // This gets the Dropbox error, translated into the user's language
             err = e.body.userError;
@@ -165,6 +170,7 @@ public class Thumbnails extends AsyncTask<Void, Long, Boolean> {
             // Unknown error
             err = "Unknown error.  Try again.";
         }
+        
         return false;
     }
 
@@ -177,6 +183,11 @@ public class Thumbnails extends AsyncTask<Void, Long, Boolean> {
     @Override
     protected void onPostExecute(Boolean result) {
         mDialog.dismiss();
+        if (err == null) {
+        	this.view.forceLayout();
+        } else {
+        	Toast.makeText(context, err, Toast.LENGTH_SHORT).show();	
+        }
     }
     
     public ArrayList<Drawable> getDrawables() {

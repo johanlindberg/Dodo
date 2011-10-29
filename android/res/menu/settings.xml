@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:title="@string/connect" android:id="@+id/connect"/>
+    <item android:title="@string/root_folder" android:id="@+id/root_folder"/>
 </menu>

@@ -1,5 +1,6 @@
 package se.pulp.dodo;
 
+import se.pulp.dodo.dropbox.ImageAdapter;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -31,28 +32,20 @@ public class DodoActivity extends Activity {
     final static private String ACCESS_SECRET_NAME = "ACCESS_SECRET";
 
 	private DropboxAPI<AndroidAuthSession> dropbox;
-    private final String PATH_TO_CONTENTS = "/pics/";
-
-    private Thumbnails thumbnails;
+    private String path = "/pics/";
     
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        
         // DropBox API
 		dropbox = new DropboxAPI<AndroidAuthSession>(buildSession());
-		//dropbox.getSession().startAuthentication(DodoActivity.this);
 
-        setContentView(R.layout.main);
-        
-        thumbnails = new Thumbnails(this, dropbox, PATH_TO_CONTENTS);
-        thumbnails.execute();
-	}
-	
-	public void updateUI() {
         // UI 
+        setContentView(R.layout.main);
+
         GridView gridview = (GridView) findViewById(R.id.gridview);
-        gridview.setAdapter(new ImageAdapter(this, thumbnails));
+        gridview.setAdapter(new ImageAdapter(this, dropbox, path, gridview));
         
         gridview.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
@@ -97,7 +90,7 @@ public class DodoActivity extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
         switch (item.getItemId()) {
-        case R.id.connect:
+        case R.id.root_folder:
             connect();
             return true;
         default:
@@ -161,6 +154,7 @@ public class DodoActivity extends Activity {
             session = new AndroidAuthSession(appKeyPair, DROPBOX_ACCESS_TYPE, accessToken);
         } else {
             session = new AndroidAuthSession(appKeyPair, DROPBOX_ACCESS_TYPE);
+            session.startAuthentication(DodoActivity.this);
         }
 
         return session;
