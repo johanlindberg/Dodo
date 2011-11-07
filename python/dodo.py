@@ -1,16 +1,27 @@
+# -*- coding: iso-8859-1 -*-
 from __future__ import division 
 
 import pyglet
 import os
+
 import time
 
 class Dodo_obj:
     def __init__(self, directory, filename):
 	self.params = load_configuration()
 	self.path = directory 
-	self.name, extension = os.path.splitext(filename) 
+	self.name, extension = os.path.splitext(filename)
+#	print(time.time()) 
 	pic = pyglet.image.load('%s/%s' % (directory, filename))
+#	print(time.time())
+#	print(directory,filename) 
+#	print("end")
 	self.sprite = pyglet.sprite.Sprite(pic)
+	print(self.name.decode('iso8859-1'))
+	self.label=pyglet.text.Label(text=self.name.decode('iso8859-1'), color=(0, 0, 0, 255),font_size= 16, bold = True, font_name='Times New Roman',anchor_x = "center", anchor_y = "top" )
+	self.label.set_style('color', (255,255,255,255))
+	self.label.set_style('background_color', (0,0,0,255))
+
 	
 	#Check_for_video
 	self.video_exist = False
@@ -142,6 +153,12 @@ class Dodo(pyglet.window.Window):
 	    	     scale = float(dy / dodos[i].sprite.height)
 	    	
                 dodos[i].sprite.position=(x,y)
+                dodos[i].label.x=x+dodos[i].sprite.width*scale*0.5
+                dodos[i].label.y=y+dodos[i].sprite.height*scale+5
+                #pyglet.text.Label(dodos[i].name, color=(0, 100, 100, 133),
+                 #         font_name='Times New Roman',width = 150, x=x, y=y+dodos[i].sprite.height*scale, anchor_x = "right", anchor_y = "top" )
+                          
+               # dodos[i].label.set_style(0, "color"=(0, 0, 0, 255))
                 dodos[i].sprite.scale = scale
 
                 # attach an on_mouse_click handler to this sprite
@@ -188,6 +205,7 @@ class Dodo(pyglet.window.Window):
         self.clear()
         for s in self.find_dodos():
             s.sprite.draw()
+            s.label.draw()
 
         if len(self.current_path) > 0:
             self.back_sprite.draw()
@@ -200,8 +218,8 @@ class Dodo(pyglet.window.Window):
           self.sprites = self.load_all_images(self.params["start_directory"])
           self.current_dodo = False
           self.current_path = []
-          print(self.current_path)
-          print(len(self.sprites))
+#          print(self.current_path)
+#          print(len(self.sprites))
           self.position_and_scale_all_images()
                   
 
