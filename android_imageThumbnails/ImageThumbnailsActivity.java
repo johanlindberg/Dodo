@@ -3,7 +3,6 @@ package image.Thumbnails;
 
 import java.io.File;
 import java.io.IOException;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -13,27 +12,23 @@ import android.graphics.Bitmap;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 
 public class ImageThumbnailsActivity extends Activity
 {
-	
-    private int count;
-    /**
-     * Caching this is a trade off in memory versus performance.
-     * We deliberated use the smallest thumbnails so the size of each should be small (92x92x1 byte = about 10kb each)
-     * but can be significant if there are thousands of images on the device.
-     */
-    public MediaStructure mediaStructure;
+	public MediaStructure mediaStructure;
     public MediaStructure activeStructure;
-    public MediaData[] windows;
     public ImageAdapter ia;
     public MediaPlayer mediaPlay;
     
@@ -43,6 +38,7 @@ public class ImageThumbnailsActivity extends Activity
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
         init_phone_image_grid();
     }
@@ -59,8 +55,6 @@ public class ImageThumbnailsActivity extends Activity
     	if (activeStructure.parentStructure != null)
     	{
     		activeStructure=activeStructure.parentStructure;
-    		this.windows=activeStructure.media;
-    		this.count=windows.length; 
     		this.ia.notifyDataSetChanged();
     	}
     }
@@ -71,31 +65,48 @@ public class ImageThumbnailsActivity extends Activity
         
     	this.mediaStructure = new MediaStructure("/mnt/sdcard/Images/");
         activeStructure = mediaStructure;
-        this.count=this.mediaStructure.media.length;
-        this.windows=this.mediaStructure.media;
+        this.activeStructure.media=this.mediaStructure.media;
         this.mediaPlay = new MediaPlayer();  
         GridView imagegrid = (GridView) findViewById(R.id.PhoneImageGrid);
+        ImageView backView = (ImageView) findViewById(R.id.BackImageView);
         this.ia = new ImageAdapter(getApplicationContext());
         imagegrid.setAdapter(ia);
+        backView.setClickable(true);
+       
+        
+        backView.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				if (activeStructure.parentStructure != null)
+		    	{
+		    		activeStructure=activeStructure.parentStructure;
+		    		ia.notifyDataSetChanged();
+		    	}
+			}
+        });
+        //imageCursor.close
+        
+        
         imagegrid.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(@SuppressWarnings("rawtypes") AdapterView parent, View v, int position, long id)
             {
-            	if (windows[position].isDir)
+            	if (activeStructure.media[position].isDir)
             	{
-            		if (windows[position].isSound) playSound(windows[position].audioFilename);
+            		if (activeStructure.media[position].isSound) playSound(activeStructure.media[position].audioFilename);
             		int dirIndex=activeStructure.media[position].dirIndex;
             		activeStructure=activeStructure.subStructure[dirIndex];
-            		windows=activeStructure.media;
-            		count=windows.length;
             		ia.notifyDataSetChanged();            		            		
             	}
             	else 
             	{
             		//Show single image
-            		if (activeStructure.media[position].isSound) playSound(windows[position].audioFilename);
+            		if (activeStructure.media[position].isSound) playSound(activeStructure.media[position].audioFilename);
             		final Intent intent = new Intent(ImageThumbnailsActivity.this, ViewImage.class);
-                	intent.putExtra("filename", windows[position].filename);
-                    startActivity(intent);
+                	intent.putExtra("filename", activeStructure.media[position].filename);
+                    intent.putExtra("caption", activeStructure.media[position].getCaption());
+                    intent.putExtra("audioFileName",activeStructure.media[position].audioFilename);
+                    
+                	startActivity(intent);
             	}
             }
         });
@@ -148,10 +159,16 @@ public class ImageThumbnailsActivity extends Activity
     		isSound = (audioFname.length()>0);
     		audioFilename=audioFname;    			
     	}
+    	public String getCaption(){
+    		int start= filename.lastIndexOf("/");
+    		int stop= filename.lastIndexOf(".");
+    		if (stop < 0) stop=filename.length(); //should not happen?
+    		return filename.substring(start+1, stop).toUpperCase();
+    	}
     }
     
     
-    public class MediaStructure
+    public class MediaStructure 
     {
     	public MediaStructure[] subStructure;
     	private MediaData[] media;
@@ -177,8 +194,6 @@ public class ImageThumbnailsActivity extends Activity
             if (audioCursor.getCount() > 0)
             {
             	dataColIndexAudio = audioCursor.getColumnIndex(MediaStore.Audio.Media.DATA);
-            
-            	String audioName= audioCursor.getString(dataColIndexAudio);
             }
             
             
@@ -210,7 +225,7 @@ public class ImageThumbnailsActivity extends Activity
             for(int j=0;j<(this.nrOfImages);j++)        		
             {
                 imageCursor.moveToPosition(idArray[j]);
-                Bitmap img = MediaStore.Images.Thumbnails.getThumbnail(getApplicationContext().getContentResolver(),imageCursor.getInt(image_column_index), MediaStore.Images.Thumbnails.MICRO_KIND, null);
+                Bitmap img = MediaStore.Images.Thumbnails.getThumbnail(getApplicationContext().getContentResolver(),imageCursor.getInt(image_column_index), MediaStore.Images.Thumbnails.MINI_KIND, null);
                 String filename= imageCursor.getString(dataColIndex);
                 File dir = new File (stripFileExtension(filename));
                 boolean isDir = (dir.isDirectory());
@@ -245,6 +260,14 @@ public class ImageThumbnailsActivity extends Activity
             }
     		            	
     	}    	
+    	
+    	 /*  public MediaStructure(Parcel in){          
+    		   String[] data = new String[3]; 
+    		   in.readStringArray(data);         
+    		   this.id = data[0];        
+    		   this.name = data[1];         
+    		   this.grade = data[2]; 
+    	  }*/
     
     }
     
@@ -261,20 +284,14 @@ public class ImageThumbnailsActivity extends Activity
     
     public int getNrOfImages(Cursor imageCursor, String path, int dataColIndex)
     {
-    	String[] s3= new String[imageCursor.getCount()];
     	int picsInDir = 0;
     	for(int j=0;j<(imageCursor.getCount());j++)
             
     	{
     	
     		imageCursor.moveToPosition(j);
-    		//if (path.lastIndexOf("/") != stripFileExtension(imageCursor.getString(dataColIndex)).lastIndexOf("/"))
-    		String s2 = stripFileExtension(imageCursor.getString(dataColIndex));
-    		s3[j]=s2;
-    		
     		if (path.lastIndexOf("/") == stripFileExtension(imageCursor.getString(dataColIndex)).lastIndexOf("/"))
-            	
-    		{
+       		{
         		picsInDir++;
         	}
             
@@ -286,17 +303,10 @@ public class ImageThumbnailsActivity extends Activity
    
     public String getAudioFilename(Cursor audioCursor, String filename, int dataColIndexAudio)
     {
-    	//String [] s5 = new String [audioCursor.getCount()];
-    	//String s6;
-    	//String s7;
     	if (audioCursor.getCount()==0) return "";
     	for(int j=0;j<(audioCursor.getCount());j++)
     	{
     		audioCursor.moveToPosition(j);
-			String s2 = stripFileExtension(audioCursor.getString(dataColIndexAudio));
-			//s5[j]=s2;
-			//s6=stripFileExtension(filename);
-			//s7=stripFileExtension(audioCursor.getString(dataColIndexAudio));
 			if (stripFileExtension(filename).equalsIgnoreCase(stripFileExtension(audioCursor.getString(dataColIndexAudio))))
 			{
 				return audioCursor.getString(dataColIndexAudio);
@@ -321,7 +331,7 @@ public class ImageThumbnailsActivity extends Activity
         @Override
         public int getCount()
         {
-            return count;
+            return activeStructure.media.length;
         }
 
         @Override
@@ -340,18 +350,33 @@ public class ImageThumbnailsActivity extends Activity
         @Override
         public View getView(int position, View convertView, ViewGroup parent)
         {
-            ImageView i = (ImageView)convertView;
-            if(i!=null)
+            View v = convertView;
+            if(v!=null)
             {
-               i.setImageBitmap(windows[position].image);
+            	LayoutInflater li = getLayoutInflater();
+            	v = li.inflate(R.layout.gridlayout, null);
+            	TextView tv = (TextView)v.findViewById(R.id.gridText);
+            	tv.setText(activeStructure.media[position].getCaption());
+            	ImageView iv = (ImageView)v.findViewById(R.id.gridImage);
+            	iv.setImageBitmap(activeStructure.media[position].image);
+            	//ImageView iv = (ImageView)v.findViewById(R.id.BackImageView);
+            	//iv.setImageResource(R.drawable.icon);
+                //i.setImageBitmap(activeStructure.media[position].image);
             }
             else
             {
-                i = new ImageView(mContext.getApplicationContext());
-                i.setImageBitmap(windows[position].image);
-                i.setLayoutParams(new GridView.LayoutParams(250, 250));
+            	v = new View(mContext.getApplicationContext());
+            	LayoutInflater li = getLayoutInflater();
+            	v = li.inflate(R.layout.gridlayout, null);
+            	TextView tv = (TextView)v.findViewById(R.id.gridText);
+            	tv.setText(activeStructure.media[position].getCaption());
+            	ImageView iv = (ImageView)v.findViewById(R.id.gridImage);
+            	iv.setImageBitmap(activeStructure.media[position].image);
+                //i = new ImageView(mContext.getApplicationContext());
+                //i.setImageBitmap(activeStructure.media[position].image);
+                //i.setLayoutParams(new GridView.LayoutParams(250, 250));
             }
-            return i;
+            return v;
         }
     }
 }
