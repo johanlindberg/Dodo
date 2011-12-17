@@ -31,25 +31,21 @@ public class ImageThumbnailsActivity extends Activity
     public MediaStructure activeStructure;
     public ImageAdapter ia;
     public MediaPlayer mediaPlay;
-    
+    //public String basePath = "/mnt/sdcard/My SugarSync Folders/pics/";
+    public String basePath = "/mnt/sdcard/Images/";
     
     
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        this.requestWindowFeature(Window.FEATURE_NO_TITLE); //Hide Title bar
         setContentView(R.layout.main);
         init_phone_image_grid();
     }
-    @Override public void onConfigurationChanged(Configuration newConfig)
-    {   
-    	super.onConfigurationChanged(newConfig); 
-    	this.ia.notifyDataSetChanged();
-    	setContentView(R.layout.main); 
-    } 
+
     
-    
+    //Catch click on Ancroid back button and do the same as when our back is clicked. (App will not terminate)
     @Override
     public void onBackPressed() {
     	if (activeStructure.parentStructure != null)
@@ -63,8 +59,9 @@ public class ImageThumbnailsActivity extends Activity
     private void init_phone_image_grid()
     {
         
-    	this.mediaStructure = new MediaStructure("/mnt/sdcard/Images/");
-        activeStructure = mediaStructure;
+    	//this.mediaStructure = new MediaStructure("/mnt/sdcard/My SugarSync Folders/pics/");
+    	this.mediaStructure = new MediaStructure(basePath);
+    	activeStructure = mediaStructure;
         this.activeStructure.media=this.mediaStructure.media;
         this.mediaPlay = new MediaPlayer();  
         GridView imagegrid = (GridView) findViewById(R.id.PhoneImageGrid);
@@ -90,9 +87,10 @@ public class ImageThumbnailsActivity extends Activity
         imagegrid.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(@SuppressWarnings("rawtypes") AdapterView parent, View v, int position, long id)
             {
+            	//if the image selected has a directory, set activeStructure to point at this directory structure
             	if (activeStructure.media[position].isDir)
             	{
-            		if (activeStructure.media[position].isSound) playSound(activeStructure.media[position].audioFilename);
+            		if (activeStructure.media[position].isSound && !mediaPlay.isPlaying()) playSound(activeStructure.media[position].audioFilename);
             		int dirIndex=activeStructure.media[position].dirIndex;
             		activeStructure=activeStructure.subStructure[dirIndex];
             		ia.notifyDataSetChanged();            		            		
@@ -100,7 +98,7 @@ public class ImageThumbnailsActivity extends Activity
             	else 
             	{
             		//Show single image
-            		if (activeStructure.media[position].isSound) playSound(activeStructure.media[position].audioFilename);
+            		if (activeStructure.media[position].isSound && !mediaPlay.isPlaying()) playSound(activeStructure.media[position].audioFilename);
             		final Intent intent = new Intent(ImageThumbnailsActivity.this, ViewImage.class);
                 	intent.putExtra("filename", activeStructure.media[position].filename);
                     intent.putExtra("caption", activeStructure.media[position].getCaption());
@@ -141,6 +139,8 @@ public class ImageThumbnailsActivity extends Activity
     	mediaPlay.start(); 
     }
     
+    
+    //MediaData holds all information for a mediaItem such as paths to bitmap and sound file
     public class MediaData
     {
     	public String filename;
@@ -148,7 +148,7 @@ public class ImageThumbnailsActivity extends Activity
     	public boolean isDir;
     	public boolean isSound;
     	public int dirIndex;
-    	public String audioFilename;
+    	public String audioFilename;    	
     	public MediaData (String fname,Bitmap img, boolean isDirectory, int index, String audioFname)
     	{
     		
@@ -159,6 +159,8 @@ public class ImageThumbnailsActivity extends Activity
     		isSound = (audioFname.length()>0);
     		audioFilename=audioFname;    			
     	}
+    	
+    	//GetCaption is used to get a string to write above each image. (Upper case filename without extension)
     	public String getCaption(){
     		int start= filename.lastIndexOf("/");
     		int stop= filename.lastIndexOf(".");
@@ -168,11 +170,11 @@ public class ImageThumbnailsActivity extends Activity
     }
     
     
+    //MediaStructure holds a tree with all media found below basePath. It there is a directory with the same name as a image file a subStructure is created
     public class MediaStructure 
     {
     	public MediaStructure[] subStructure;
-    	private MediaData[] media;
-    	
+    	private MediaData[] media;    	
     	private int nrOfImages;
     	private int nrOfDirs;
     	public MediaStructure parentStructure;
@@ -185,9 +187,11 @@ public class ImageThumbnailsActivity extends Activity
             this.path=dirPath;
             String tempPath= "%" + path + "%"; 	
             String [] queryPath = {tempPath};
+          //Query for images below dirPath. ANNOING that it is not possible to get just this folder without subfolders!!!! MAkes code messy...             
             Cursor imageCursor = managedQuery(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, columns,MediaStore.Images.Media.DATA + " like ? ", queryPath,orderBy);
             
             final String[] columnsAudio = { MediaStore.Audio.Media._ID , MediaStore.Audio.Media.DATA };
+            //Query for Audio files  
             Cursor audioCursor = getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, columnsAudio, MediaStore.Images.Media.DATA + " like ? ",queryPath, MediaStore.Audio.Media._ID);
             audioCursor.moveToFirst();
             int dataColIndexAudio = -1;
@@ -199,15 +203,15 @@ public class ImageThumbnailsActivity extends Activity
             
             int dataColIndex = imageCursor.getColumnIndex(MediaStore.Images.Media.DATA);
             int image_column_index = imageCursor.getColumnIndex(MediaStore.Images.Media._ID);
+            
+            //getNrOfImages is called to find out how many images that are in the specific folder, ie not in subfolders.
             this.nrOfImages = getNrOfImages(imageCursor, this.path, dataColIndex);
             idArray=new int[this.nrOfImages];
             
-            // Create array idArray with index for images located in path folder.
-            
-            int k=0;
+            // Create array idArray with index for images located in path folder (i.e not in sub folders).
+            int k=0;            
             for(int i=0;i<imageCursor.getCount();i++) 
             {
-            	
             	imageCursor.moveToPosition(i);
         		String s2 = stripFileExtension(imageCursor.getString(dataColIndex));
         		if (path.lastIndexOf("/") == s2.lastIndexOf("/"))
@@ -217,8 +221,6 @@ public class ImageThumbnailsActivity extends Activity
         		}
             }
             
-            
-            
             // Build an array of MediaData getting data from cursor at indexes in idArray 
             media = new MediaData [this.nrOfImages];
             nrOfDirs = 0;
@@ -226,6 +228,7 @@ public class ImageThumbnailsActivity extends Activity
             {
                 imageCursor.moveToPosition(idArray[j]);
                 Bitmap img = MediaStore.Images.Thumbnails.getThumbnail(getApplicationContext().getContentResolver(),imageCursor.getInt(image_column_index), MediaStore.Images.Thumbnails.MINI_KIND, null);
+                //Bitmap img = MediaStore.Images.Thumbnails.getThumbnail(getApplicationContext().getContentResolver(),imageCursor.getInt(image_column_index), MediaStore.Images.Thumbnails.MICRO_KIND, null);                
                 String filename= imageCursor.getString(dataColIndex);
                 File dir = new File (stripFileExtension(filename));
                 boolean isDir = (dir.isDirectory());
@@ -235,7 +238,8 @@ public class ImageThumbnailsActivity extends Activity
                 }
                 if (audioCursor.getCount() > 0)
                 {
-                media[j]=new MediaData(filename,img,isDir,nrOfDirs-1,getAudioFilename(audioCursor,filename,dataColIndexAudio));
+                	//getAudioFilename searches for audio file within audioCursor and returns path to audio file if found.
+                	media[j]=new MediaData(filename,img,isDir,nrOfDirs-1,getAudioFilename(audioCursor,filename,dataColIndexAudio));
                 }
                 else
                 {
@@ -260,15 +264,6 @@ public class ImageThumbnailsActivity extends Activity
             }
     		            	
     	}    	
-    	
-    	 /*  public MediaStructure(Parcel in){          
-    		   String[] data = new String[3]; 
-    		   in.readStringArray(data);         
-    		   this.id = data[0];        
-    		   this.name = data[1];         
-    		   this.grade = data[2]; 
-    	  }*/
-    
     }
     
     
@@ -282,6 +277,8 @@ public class ImageThumbnailsActivity extends Activity
     }
     
     
+    
+    //Find out how many images that are in the path directory, ie not in sub directories.
     public int getNrOfImages(Cursor imageCursor, String path, int dataColIndex)
     {
     	int picsInDir = 0;
@@ -300,7 +297,7 @@ public class ImageThumbnailsActivity extends Activity
     }
     
     
-   
+    //getAudioFilename searches for audio file within audioCursor and returns path to audio file if found.
     public String getAudioFilename(Cursor audioCursor, String filename, int dataColIndexAudio)
     {
     	if (audioCursor.getCount()==0) return "";
@@ -353,15 +350,12 @@ public class ImageThumbnailsActivity extends Activity
             View v = convertView;
             if(v!=null)
             {
-            	LayoutInflater li = getLayoutInflater();
+            	LayoutInflater li = getLayoutInflater(); // use inflator to get both text and image in the gridview
             	v = li.inflate(R.layout.gridlayout, null);
             	TextView tv = (TextView)v.findViewById(R.id.gridText);
             	tv.setText(activeStructure.media[position].getCaption());
             	ImageView iv = (ImageView)v.findViewById(R.id.gridImage);
             	iv.setImageBitmap(activeStructure.media[position].image);
-            	//ImageView iv = (ImageView)v.findViewById(R.id.BackImageView);
-            	//iv.setImageResource(R.drawable.icon);
-                //i.setImageBitmap(activeStructure.media[position].image);
             }
             else
             {
@@ -372,9 +366,6 @@ public class ImageThumbnailsActivity extends Activity
             	tv.setText(activeStructure.media[position].getCaption());
             	ImageView iv = (ImageView)v.findViewById(R.id.gridImage);
             	iv.setImageBitmap(activeStructure.media[position].image);
-                //i = new ImageView(mContext.getApplicationContext());
-                //i.setImageBitmap(activeStructure.media[position].image);
-                //i.setLayoutParams(new GridView.LayoutParams(250, 250));
             }
             return v;
         }

@@ -17,8 +17,8 @@ public class ViewImage extends Activity {
       private String filename;
       private String caption;
       private String audioFileName;
-      private String s;
       public MediaPlayer mediaPlay;
+      public int remove;
       @Override
       public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
@@ -52,7 +52,7 @@ public class ViewImage extends Activity {
             imView.setOnClickListener(new OnClickListener() {
     			@Override
     			public void onClick(View arg0) {
-    				playSound(audioFileName);
+    				if (!mediaPlay.isPlaying()) playSound(audioFileName);
     			}
             });
             
@@ -64,6 +64,7 @@ public class ViewImage extends Activity {
       
       public void playSound(String audioFile)
       {
+    	
       	try {
       		mediaPlay.reset();
   			mediaPlay.setDataSource(audioFile);
