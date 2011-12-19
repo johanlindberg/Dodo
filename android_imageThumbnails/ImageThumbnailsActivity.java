@@ -3,14 +3,15 @@ package image.Thumbnails;
 
 import java.io.File;
 import java.io.IOException;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -33,7 +34,19 @@ public class ImageThumbnailsActivity extends Activity
     public MediaPlayer mediaPlay;
     //public String basePath = "/mnt/sdcard/My SugarSync Folders/pics/";
     public String basePath = "/mnt/sdcard/Images/";
+    final int doubleClickProtectionTime = 700;
+    boolean doubleClickProtected = false;
     
+    
+    //used to protect from accidential double click
+    Handler handler=new Handler();
+    Runnable r=new Runnable()
+    {
+        public void run() 
+        {
+        	doubleClickProtected = false;                       
+        }
+    };
     
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -48,14 +61,29 @@ public class ImageThumbnailsActivity extends Activity
     //Catch click on Ancroid back button and do the same as when our back is clicked. (App will not terminate)
     @Override
     public void onBackPressed() {
-    	if (activeStructure.parentStructure != null)
+    	if (activeStructure.parentStructure != null && !doubleClickProtected)
     	{
     		activeStructure=activeStructure.parentStructure;
     		this.ia.notifyDataSetChanged();
+    		
+    		 //Protect from fast double click
+            doubleClickProtected = true;
+            handler.postDelayed(r, doubleClickProtectionTime );
+    		
+    		
+    		
     	}
     }
 
-
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    	super.onActivityResult(requestCode, resultCode, data);
+    	doubleClickProtected = true;
+    	handler.postDelayed(r, doubleClickProtectionTime );                          
+    }
+    
+    
+    
     private void init_phone_image_grid()
     {
         
@@ -74,10 +102,14 @@ public class ImageThumbnailsActivity extends Activity
         backView.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
-				if (activeStructure.parentStructure != null)
+				if (activeStructure.parentStructure != null && !doubleClickProtected)
 		    	{
 		    		activeStructure=activeStructure.parentStructure;
 		    		ia.notifyDataSetChanged();
+		    		
+		    		 //Protect from fast double click
+		            doubleClickProtected = true;
+		            handler.postDelayed(r, doubleClickProtectionTime );
 		    	}
 			}
         });
@@ -87,24 +119,33 @@ public class ImageThumbnailsActivity extends Activity
         imagegrid.setOnItemClickListener(new OnItemClickListener() {
             public void onItemClick(@SuppressWarnings("rawtypes") AdapterView parent, View v, int position, long id)
             {
-            	//if the image selected has a directory, set activeStructure to point at this directory structure
-            	if (activeStructure.media[position].isDir)
-            	{
-            		if (activeStructure.media[position].isSound && !mediaPlay.isPlaying()) playSound(activeStructure.media[position].audioFilename);
-            		int dirIndex=activeStructure.media[position].dirIndex;
-            		activeStructure=activeStructure.subStructure[dirIndex];
-            		ia.notifyDataSetChanged();            		            		
-            	}
-            	else 
-            	{
+            	
+            	if (!doubleClickProtected){
+            		
+            		//if the image selected has a directory, set activeStructure to point at this directory structure
+            		if (activeStructure.media[position].isDir)
+            		{
+            			if (activeStructure.media[position].isSound && !mediaPlay.isPlaying()) playSound(activeStructure.media[position].audioFilename);
+            			int dirIndex=activeStructure.media[position].dirIndex;
+            			activeStructure=activeStructure.subStructure[dirIndex];
+            			ia.notifyDataSetChanged();
+            			
+            			 //Protect from fast double click
+                        doubleClickProtected = true;
+                        handler.postDelayed(r, doubleClickProtectionTime );
+            		}
+            		else 
+            		{
             		//Show single image
-            		if (activeStructure.media[position].isSound && !mediaPlay.isPlaying()) playSound(activeStructure.media[position].audioFilename);
-            		final Intent intent = new Intent(ImageThumbnailsActivity.this, ViewImage.class);
-                	intent.putExtra("filename", activeStructure.media[position].filename);
-                    intent.putExtra("caption", activeStructure.media[position].getCaption());
-                    intent.putExtra("audioFileName",activeStructure.media[position].audioFilename);
+            			if (activeStructure.media[position].isSound && !mediaPlay.isPlaying()) playSound(activeStructure.media[position].audioFilename);
+            			final Intent intent = new Intent(ImageThumbnailsActivity.this, ViewImage.class);
+            			intent.putExtra("filename", activeStructure.media[position].filename);
+            			intent.putExtra("caption", activeStructure.media[position].getCaption());
+            			intent.putExtra("audioFileName",activeStructure.media[position].audioFilename);
                     
-                	startActivity(intent);
+                    
+            			startActivityForResult(intent,0);
+            		}
             	}
             }
         });
